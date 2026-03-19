@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2018 naehrwert
- * Copyright (c) 2018-2024 CTCaer
+ * Copyright (c) 2018-2026 CTCaer
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -46,9 +46,6 @@
 #include <thermal/fan.h>
 #include <thermal/tmp451.h>
 #include <utils/util.h>
-
-extern boot_cfg_t b_cfg;
-extern volatile nyx_storage_t *nyx_str;
 
 u32 hw_rst_status;
 u32 hw_rst_reason;
@@ -197,7 +194,7 @@ static void _mbist_workaround_bl()
 		I2S(I2S_CG   + (i2s_idx << 8u))  = I2S_CG_SLCG_DISABLE;
 	}
 	// Set SLCG overrides for DISPA and VIC.
-	DISPLAY_A(_DIREG(DC_COM_DSC_TOP_CTL)) |= BIT(2); // DSC_SLCG_OVERRIDE.
+	DISPLAY_A(DC_COM_DSC_TOP_CTL) |= BIT(2); // DSC_SLCG_OVERRIDE.
 	VIC(VIC_THI_SLCG_OVERRIDE_LOW_A) = 0xFFFFFFFF;
 
 	// Wait a bit for MBIST_EN to get unstuck (1 cycle min).
@@ -206,7 +203,7 @@ static void _mbist_workaround_bl()
 	// Reset SLCG to automatic mode.
 	// for (u32 i2s_idx = 0; i2s_idx < 5; i2s_idx++)
 	// 	I2S(I2S_CG   + (i2s_idx << 8u)) = I2S_CG_SLCG_ENABLE;
-	// DISPLAY_A(_DIREG(DC_COM_DSC_TOP_CTL)) &= ~BIT(2); // DSC_SLCG_OVERRIDE.
+	// DISPLAY_A(DC_COM_DSC_TOP_CTL) &= ~BIT(2); // DSC_SLCG_OVERRIDE.
 	// VIC(VIC_THI_SLCG_OVERRIDE_LOW_A) = 0;
 
 	// Set per-clock reset for APE/VIC/HOST1X/DISP1.
@@ -471,9 +468,14 @@ void hw_init()
 #endif
 }
 
-void hw_deinit(bool coreboot, u32 bl_magic)
+void hw_deinit(bool keep_display)
 {
-	bool tegra_t210 = hw_get_chip_id() == GP_HIDREV_MAJOR_T210;
+	// Seamless display or display power off.
+	if (!keep_display)
+	{
+		display_end();
+		clock_disable_host1x();
+	}
 
 	// Scale down BPMP clock.
 	bpmp_clk_rate_set(BPMP_CLK_NORMAL);
@@ -488,9 +490,8 @@ void hw_deinit(bool coreboot, u32 bl_magic)
 	regulator_5v_disable(REGULATOR_5V_ALL);
 #endif
 
-	// set DRAM clock to 204MHz.
-	minerva_change_freq(FREQ_204);
-	nyx_str->mtc_cfg.init_done = 0;
+	// Set DRAM clock to 204MHz.
+	minerva_deinit();
 
 	// Flush/disable MMU cache.
 	bpmp_mmu_disable();
@@ -499,42 +500,9 @@ void hw_deinit(bool coreboot, u32 bl_magic)
 	hw_config_arbiter(true);
 
 	// Re-enable clocks to Audio Processing Engine as a workaround to rerunning mbist war.
-	if (tegra_t210)
+	if (hw_get_chip_id() == GP_HIDREV_MAJOR_T210)
 	{
 		CLOCK(CLK_RST_CONTROLLER_CLK_ENB_V_SET) = BIT(CLK_V_AHUB);
 		CLOCK(CLK_RST_CONTROLLER_CLK_ENB_Y_SET) = BIT(CLK_Y_APE);
-	}
-
-	// Do coreboot mitigations.
-	if (coreboot)
-	{
-		msleep(10);
-
-		clock_disable_cl_dvfs();
-
-		// Disable Joy-con detect in order to restore UART TX.
-		gpio_config(GPIO_PORT_G, GPIO_PIN_0, GPIO_MODE_SPIO);
-		gpio_config(GPIO_PORT_D, GPIO_PIN_1, GPIO_MODE_SPIO);
-
-		// Reinstate SD controller power.
-		PMC(APBDEV_PMC_NO_IOPOWER) &= ~PMC_NO_IOPOWER_SDMMC1;
-	}
-
-	// Seamless display or display power off.
-	switch (bl_magic)
-	{
-	case BL_MAGIC_CRBOOT_SLD:;
-		// Set pwm to 0%, switch to gpio mode and restore pwm duty.
-		u32 brightness = display_get_backlight_brightness();
-		display_backlight_brightness(0, 1000);
-		gpio_config(GPIO_PORT_V, GPIO_PIN_0, GPIO_MODE_GPIO);
-		display_backlight_brightness(brightness, 0);
-		break;
-	case BL_MAGIC_L4TLDR_SLD:
-		// Do not disable display or backlight at all.
-		break;
-	default:
-		display_end();
-		clock_disable_host1x();
 	}
 }

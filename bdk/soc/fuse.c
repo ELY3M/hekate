@@ -89,6 +89,14 @@ u32 fuse_read_odm_keygen_rev()
 	return 0;
 }
 
+static bool _dramid_8gb = false;
+
+void fuse_force_8gb_dramid()
+{
+	// Override fuse DRAM ID with a 8GB ID.
+	_dramid_8gb = true;
+}
+
 u32 fuse_read_dramid(bool raw_id)
 {
 	bool tegra_t210 = hw_get_chip_id() == GP_HIDREV_MAJOR_T210;
@@ -107,11 +115,17 @@ u32 fuse_read_dramid(bool raw_id)
 	{
 		if (dramid > 7)
 			dramid = 0;
+
+		if (_dramid_8gb)
+			dramid = 7;
 	}
 	else
 	{
 		if (dramid > 34)
 			dramid = 8;
+
+		if (_dramid_8gb)
+			dramid = 28;
 	}
 
 	return dramid;
@@ -203,13 +217,15 @@ u32 fuse_read(u32 addr)
 	return FUSE(FUSE_RDATA);
 }
 
-void fuse_read_array(u32 *words)
+u32 fuse_read_array(u32 *words)
 {
 	u32 array_size = (hw_get_chip_id() == GP_HIDREV_MAJOR_T210B01) ?
 					 FUSE_ARRAY_WORDS_NUM_B01 : FUSE_ARRAY_WORDS_NUM;
 
 	for (u32 i = 0; i < array_size; i++)
 		words[i] = fuse_read(i);
+
+	return array_size;
 }
 
 static u32 _parity32_even(const u32 *words, u32 count)

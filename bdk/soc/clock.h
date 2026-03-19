@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2018 naehrwert
- * Copyright (c) 2018-2024 CTCaer
+ * Copyright (c) 2018-2025 CTCaer
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -171,6 +171,8 @@
 #define CLK_NO_SOURCE 0x0
 #define CLK_NOT_USED  0x0
 
+#define CLK_CLR_OFFSET 0x4
+
 /*! PLL control and status bits */
 #define PLL_BASE_LOCK        BIT(27)
 #define PLL_BASE_REF_DIS     BIT(29)
@@ -210,8 +212,8 @@
 #define PTO_DIV_SEL_MASK         (3 << 23)
 #define PTO_DIV_SEL_GATED        (0 << 23)
 #define PTO_DIV_SEL_DIV1         (1 << 23)
-#define PTO_DIV_SEL_DIV2_RISING  (2 << 23)
-#define PTO_DIV_SEL_DIV2_FALLING (3 << 23)
+#define PTO_DIV_SEL_DIV4_RISING  (2 << 23)
+#define PTO_DIV_SEL_DIV4_FALLING (3 << 23)
 #define PTO_DIV_SEL_CPU_EARLY    (0 << 23)
 #define PTO_DIV_SEL_CPU_LATE     (1 << 23)
 
@@ -378,22 +380,22 @@ typedef enum _clock_pto_id_t
 	CLK_PTO_HDMI              = 0xC2,
 
 	CLK_PTO_DISP2             = 0xC4,
-	CLK_PTO_DISP1             = 0xC5,
+	CLK_PTO_DISP1             = 0xC5,  // Branches: 0xD5, 0xE5, 0xF5.
 
-	CLK_PTO_PLLD_OBS          = 0xCA,
+	CLK_PTO_PLLD_OBS          = 0xCA,  // Branches: 0xDA, 0xEA, 0xFA.
 	CLK_PTO_PLLD2_PTO_OBS     = 0xCC,
 	CLK_PTO_PLLDP_OBS         = 0xCE,
 	CLK_PTO_PLLE_OBS          = 0x10A,
-	CLK_PTO_PLLU_OBS          = 0x10C,
+	CLK_PTO_PLLU_OBS          = 0x10C, // Branches: 0x14C 0x18C 0x1CC.
 	CLK_PTO_PLLREFE_OBS       = 0x10E,
 
-	CLK_PTO_XUSB_FALCON       = 0x110,
-	CLK_PTO_XUSB_CLK480M_HSIC = 0x111,
+	CLK_PTO_XUSB_FALCON       = 0x110, // Branches: 0x150 0x190 0x1D0.
+	CLK_PTO_XUSB_CLK480M_HSIC = 0x111, // Branches: 0x151 0x191 0x1D1.
 	CLK_PTO_USB_L0_RX         = 0x112,
 	CLK_PTO_USB_L3_RX         = 0x113,
 	CLK_PTO_USB_RX            = 0x114,
 	CLK_PTO_USB3_L0_TXCLKREF  = 0x115,
-	CLK_PTO_PEX_TXCLKREF_SWITCH_TMS = 0x116,
+	CLK_PTO_PEX_TXCLKREF_SWITCH_TMS  = 0x116,
 	CLK_PTO_PEX_TXCLKREF_SWITCH_GRP0 = 0x117,
 	CLK_PTO_PEX_TXCLKREF_SWITCH_GRP1 = 0x118,
 	CLK_PTO_PEX_TXCLKREF_SWITCH_GRP2 = 0x119,
@@ -415,12 +417,12 @@ typedef enum _clock_pto_id_t
 	CLK_PTO_USB3_L7_TXCLKREF  = 0x12A,
 	CLK_PTO_USB3_L7_RX        = 0x12B,
 	CLK_PTO_USB3_TX           = 0x12C,
-	CLK_PTO_UTMIP_PLL_PAD     = 0x12D,
+	CLK_PTO_UTMIP_PLL_PAD     = 0x12D, // Branches: 0x16D 0x1AD 0x1ED.
 
-	CLK_PTO_XUSB_FS           = 0x136,
-	CLK_PTO_XUSB_SS_HOST_DEV  = 0x137,
-	CLK_PTO_XUSB_CORE_HOST    = 0x138,
-	CLK_PTO_XUSB_CORE_DEV     = 0x139,
+	CLK_PTO_XUSB_FS           = 0x136, // Branches: 0x176 0x1B6 0x1F6.
+	CLK_PTO_XUSB_SS_HOST_DEV  = 0x137, // Branches: 0x177 0x1B7 0x1F7.
+	CLK_PTO_XUSB_CORE_HOST    = 0x138, // Branches: 0x178 0x1B8 0x1F8.
+	CLK_PTO_XUSB_CORE_DEV     = 0x139, // Branches: 0x179 0x1B9 0x1F9.
 
 	CLK_PTO_USB3_L2_TXCLKREF  = 0x13C,
 	CLK_PTO_USB3_L3_TXCLKREF  = 0x13D,
@@ -445,13 +447,13 @@ typedef enum _clock_pto_id_t
 	CLK_PTO_PLLC2_DIV2   = 0x58,
 	CLK_PTO_PLLC3_DIV2   = 0x5A,
 
-	CLK_PTO_PLLD_DIV2    = 0xCB,
+	CLK_PTO_PLLD_DIV2    = 0xCB,  // Branches: 0xDB, 0xEB, 0xFB.
 	CLK_PTO_PLLD2_DIV2   = 0xCD,
 	CLK_PTO_PLLDP_DIV2   = 0xCF,
 
 	CLK_PTO_PLLE_DIV2    = 0x10B,
 
-	CLK_PTO_PLLU_DIV2    = 0x10D,
+	CLK_PTO_PLLU_DIV2    = 0x10D, // Branches: 0x14D 0x18D 0x1CD.
 
 	CLK_PTO_PLLREFE_DIV2 = 0x10F,
 } clock_pto_id_t;
@@ -674,11 +676,11 @@ enum CLK_Y_DEV
 /*! Generic clock descriptor. */
 typedef struct _clk_rst_t
 {
-	u16 reset;
-	u16 enable;
+	u16 reset;  // Reset  SET.
+	u16 enable; // Enable SET.
 	u16 source;
-	u8 index;
-	u8 clk_src;
+	u8 index:5;
+	u8 clk_src:3;
 	u8 clk_div;
 } clk_rst_t;
 
@@ -740,7 +742,7 @@ void clock_enable_utmipll();
 
 void clock_sdmmc_config_clock_source(u32 *pclock, u32 id, u32 clock);
 void clock_sdmmc_get_card_clock_div(u32 *pclock, u16 *pdivisor, u32 type);
-int  clock_sdmmc_is_not_reset_and_enabled(u32 id);
+int  clock_sdmmc_is_active(u32 id);
 void clock_sdmmc_enable(u32 id, u32 clock);
 void clock_sdmmc_disable(u32 id);
 

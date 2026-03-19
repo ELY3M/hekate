@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2025 CTCaer
+ * Copyright (c) 2019-2026 CTCaer
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -77,6 +77,7 @@
 
 // Nyx buffers. !Do not change!
 #define NYX_STORAGE_ADDR 0xED000000
+#define  NYX_STR_SZ          SZ_16M
 #define NYX_RES_ADDR     0xEE000000
 #define  NYX_RES_SZ          SZ_16M
 
@@ -111,6 +112,5 @@
 
 // #define EXT_PAYLOAD_ADDR    0xC0000000
 // #define RCM_PAYLOAD_ADDR    (EXT_PAYLOAD_ADDR + ALIGN(PATCHED_RELOC_SZ, 0x10))
-// #define COREBOOT_ADDR       (0xD0000000 - rom_size)
 
 #endif
